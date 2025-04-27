@@ -1,10 +1,14 @@
+resource "random_uuid" "acme_app_uuid" {
+
+}
+
 resource "azuread_application" "acme_appreg" {
   display_name = local.acme_app_name
   api {
     oauth2_permission_scope {
       admin_consent_description  = "Allow the application to access ${local.acme_app_name} on behalf of the signed-in user."
       admin_consent_display_name = "Access ${local.acme_app_name}"
-      id                         = random_uuid.acme_app_uuid[0].result
+      id                         = random_uuid.acme_app_uuid.result
       enabled                    = true
       type                       = "User"
       user_consent_description   = "Allow the application to access ${local.acme_app_name} on your behalf."
