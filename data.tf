@@ -9,8 +9,3 @@ data "azuread_group" "platform_operations" {
 data "azuread_group" "dns_contributor" {
   display_name = "ot-contributors-central"
 }
-
-
-data "azurerm_subscription" "subscriptionid" {
-  subscription_id = data.azurerm_client_config.current.subscription_id
-}
