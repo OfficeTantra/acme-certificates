@@ -1,4 +1,4 @@
 locals {
-  acme_app_name      = "acme-${lower(data.azurerm_subscription.subscriptionid.display_name)}"
+  acme_app_name      = "${var.product}-${var.env}"
   acme_function_name = "acmefunction"
 }
