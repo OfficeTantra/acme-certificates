@@ -1,0 +1,108 @@
+name: "ACME Certificate Infrastructure Deployment"
+
+variables:
+  - name: timeoutInMinutes
+    value: 60
+  - name: agentPool
+    value: 'ubuntu-latest'
+  - name: terraformInitSubscription
+    value: f591cfbf-e9bb-4d16-8007-31dc0cf12ab6
+  - name: isMain
+    value: $[in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/master')]
+  - name: isAutoTriggered
+    value: $[in(variables['Build.Reason'], 'BatchedCI', 'IndividualCI', 'PullRequest', 'Schedule')]
+  - name: terraformVersion
+    value: 1.9.6
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - master
+
+pr:
+  branches:
+    include:
+      - '*'
+
+parameters:
+  - name: overrideAction
+    type: string
+    default: plan
+    values:
+    - plan
+    - apply
+    - destroy
+  - name: environment_components
+    type: object
+    default:
+      - deployment: 'acme'
+        environment: 'central'
+        service_connection: 'ot-central-contributor'
+        storage_account_rg: 'terraform-state'
+        storage_account_name: 'terraformstatecentral'
+        tfPlanName: 'acme_tfplan'
+
+  - name: terraformEnvironmentVariables
+    type: object
+    default: null
+
+stages:
+  - ${{ each deployment in parameters.environment_components }}:
+    - stage: ${{ deployment.deployment }}
+      jobs:
+        - job: Terraform
+          displayName: 'Terraform'
+          pool:
+            vmImage: ${{ variables.agentPool }}
+          timeoutInMinutes: ${{ variables.timeoutInMinutes }}
+          steps:
+            - task: TerraformInstaller@1
+              displayName: 'Install Terraform'
+              inputs:
+                terraformVersion: ${{ variables.terraformVersion}}
+
+            - task: TerraformTaskV4@4
+              displayName: Terraform init ${{ deployment.environment }}
+              inputs:
+                provider: 'azurerm'
+                command: 'init'
+                backendServiceArm: ${{ deployment.service_connection }}
+                backendAzureRmResourceGroupName: ${{ deployment.storage_account_rg }}
+                backendAzureRmStorageAccountName: ${{ deployment.storage_account_name }}
+                backendAzureRmContainerName: subscription-tfstate
+                backendAzureRmKey: '$(Build.Repository.Name)/${{ deployment.environment }}/terraform.tfstate'
+                commandOptions: '-backend-config=subscription_id=${{ variables.terraformInitSubscription }}'
+            - task: TerraformTaskV4@4
+              displayName: Terraform validate
+              inputs:
+                command: validate
+
+            - task: TerraformTaskV4@4
+              displayName: Terraform plan ${{ deployment.environment }}
+              condition: and(succeeded(), in('${{ parameters.overrideAction }}', 'plan', 'apply'))
+              ${{ if parameters.terraformEnvironmentVariables }}:
+                env: ${{ parameters.terraformEnvironmentVariables  }}
+              inputs:
+                command: plan
+                environmentServiceNameAzureRM: ${{ deployment.service_connection }}
+                runAzLogin: true
+                publishPlanResults: ${{ deployment.tfPlanName }}
+                commandOptions: >
+                    -out tfplan-${{ deployment.tfPlanName }}
+                    -lock=false
+              
+            - task: TerraformTaskV4@4
+              displayName: Terraform apply ${{ deployment.environment }}
+              ${{ if parameters.terraformEnvironmentVariables }}:
+                env: ${{ parameters.terraformEnvironmentVariables  }}
+              condition: |
+                or(
+                and(succeeded(), eq('${{ parameters.overrideAction }}', 'apply')),
+                and(succeeded(), eq(variables['isMain'], true), eq(variables['isAutoTriggered'], true))
+                )
+              inputs:
+                runAzLogin: true
+                command: apply
+                environmentServiceNameAzureRM: ${{ deployment.service_connection }}
+                commandOptions: "-auto-approve tfplan-${{ deployment.tfPlanName }}"
