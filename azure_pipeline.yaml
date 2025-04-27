@@ -38,7 +38,7 @@ parameters:
     default:
       - deployment: 'acme'
         environment: 'central'
-        service_connection: 'ot-central-contributor'
+        service_connection: 'ot-apps-creator'
         storage_account_rg: 'terraform-state'
         storage_account_name: 'terraformstatecentral'
         tfPlanName: 'acme_tfplan'
