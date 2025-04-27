@@ -13,6 +13,6 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = data.azurerm_client_config.current.subscription_id
+  subscription_id = "a3c82269-91d1-4621-8331-71692c379d33" # ot-central
 }
 provider "azuread" {}
