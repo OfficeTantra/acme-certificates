@@ -56,7 +56,7 @@ resource "azurerm_windows_function_app" "funcapp" {
     enabled                       = true
     unauthenticated_client_action = "RedirectToLoginPage"
     default_provider              = "AzureActiveDirectory"
-    issuer                        = "https://sts.windows.net/531ff96d-0ae9-462a-8d2d-bec7c0b42082/"
+    issuer                        = "https://sts.windows.net/${data.azurerm_client_config.current.tenant_id}/"
     active_directory {
       client_id = azuread_application.acme_appreg.client_id
     }
