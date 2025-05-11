@@ -15,3 +15,9 @@ resource "azurerm_role_assignment" "kvgroupaccess" {
   role_definition_name = "Key Vault Administrator"
   scope                = azurerm_key_vault.kv.id
 }
+
+resource "azurerm_role_assignment" "dns_contributor" {
+  principal_id         = azurerm_windows_function_app.funcapp.identity[0].principal_id
+  role_definition_name = "Contributor"
+  scope                = data.azurerm_resource_group.dns_rg.id
+}

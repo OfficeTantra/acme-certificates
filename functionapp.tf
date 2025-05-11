@@ -76,8 +76,10 @@ resource "azurerm_windows_function_app" "funcapp" {
 
 }
 
-resource "azuread_group_member" "dnszonecontributor" {
-  group_object_id  = data.azuread_group.dns_contributor.object_id
-  member_object_id = azurerm_windows_function_app.funcapp.identity[0].principal_id
-}
 
+
+resource "azurerm_role_assignment" "dns_contributor" {
+  principal_id         = azurerm_windows_function_app.funcapp.identity[0].principal_id
+  role_definition_name = "Contributor"
+  scope                = data.azurerm_resource_group.dns_rg.id
+}

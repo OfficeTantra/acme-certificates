@@ -6,6 +6,7 @@ data "azuread_group" "platform_operations" {
   security_enabled = true
 }
 
-data "azuread_group" "dns_contributor" {
-  display_name = "ot-contributors-central"
+
+data "azurerm_resource_group" "dns_rg" {
+  name = "ot-public-dns-zone-rg"
 }
